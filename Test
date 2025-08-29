@@ -19,10 +19,10 @@ local Window = Rayfield:CreateWindow({
 })
 
 --// Anti-Lag Tab
-local AntiLagTab = Window:CreateTab("Anti-Lag", 4483362458)
+local AntiLagTab = Window:CreateTab("Remove character pop-up + evolve effects", 4483362458)
 
 AntiLagTab:CreateButton({
-    Name = "Hardcore Lag Fixer",
+    Name = "removed pop up+ effect",
     Callback = function()
         local badNames = {
             ["NewCharacterShowGui"] = true,
