@@ -1,152 +1,157 @@
---// Rayfield Library
+--// Hashira Training Hub
+-- Made by Vox
+
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
---// Main Window
 local Window = Rayfield:CreateWindow({
-    Name = "Hashira Training",
-    LoadingTitle = "Hashira Training",
-    LoadingSubtitle = "made by vox",
+    Name = "Hashira Training | Made by Vox",
+    LoadingTitle = "Hashira Training Hub",
+    LoadingSubtitle = "by Vox",
     ConfigurationSaving = {
         Enabled = true,
-        FolderName = "HashiraTraining",
-        FileName = "Config"
-    }
+        FolderName = "HashiraTrainingHub",
+        FileName = "Settings"
+    },
+    Discord = {
+        Enabled = false,
+    },
+    KeySystem = false,
 })
 
-local MainTab = Window:CreateTab("Main", 4483362458)
+--// Anti-Lag Tab
+local AntiLagTab = Window:CreateTab("Anti-Lag", 4483362458)
 
-----------------------------------------------------------------
--- Anti Lag (Button)
-----------------------------------------------------------------
-local antiLag = false
-MainTab:CreateButton({
-    Name = "Anti Lag",
+AntiLagTab:CreateButton({
+    Name = "Hardcore Lag Fixer",
     Callback = function()
-        if antiLag then return end
-        antiLag = true
+        local badNames = {
+            ["NewCharacterShowGui"] = true,
+            ["NewCharacterShowController"] = true,
+            ["BodySizeChange"] = true,
+            ["middleBeams"] = true,
+            ["LowerBeams"] = true,
+        }
+
+        local function checkAndDestroy(obj)
+            if badNames[obj.Name] then
+                obj:Destroy()
+            elseif obj:IsA("ParticleEmitter") and obj.Parent and obj.Parent.Name == "Attachment" then
+                obj:Destroy()
+            end
+        end
+
+        for _, obj in ipairs(game:GetDescendants()) do
+            checkAndDestroy(obj)
+        end
+
+        game.DescendantAdded:Connect(function(obj)
+            checkAndDestroy(obj)
+        end)
 
         task.spawn(function()
-            local Players = game:GetService("Players")
-            local LocalPlayer = Players.LocalPlayer
-
-            local badNames = {
-                ["NewCharacterShowGui"] = true,
-                ["NewCharacterShowController"] = true,
-                ["BodySizeChange"] = true,
-                ["middleBeams"] = true,
-                ["LowerBeams"] = true,
-            }
-
-            local function clean(obj)
-                if not obj or not obj.Parent then return end
-                if badNames[obj.Name] then
-                    pcall(function() obj:Destroy() end)
-                elseif obj:IsA("ParticleEmitter") and obj.Parent and obj.Parent.Name == "Attachment" then
-                    pcall(function() obj:Destroy() end)
-                end
-            end
-
-            for _, obj in ipairs(game:GetDescendants()) do
-                clean(obj)
-            end
-
-            local conn
-            conn = game.DescendantAdded:Connect(function(obj)
-                clean(obj)
-            end)
-
-            while antiLag do
-                task.wait(10)
+            while task.wait(10) do
                 for _, obj in ipairs(game:GetDescendants()) do
-                    clean(obj)
+                    checkAndDestroy(obj)
                 end
                 collectgarbage("collect")
-            end
-
-            if conn and conn.Connected then
-                conn:Disconnect()
             end
         end)
     end,
 })
 
-----------------------------------------------------------------
--- Auto Lift 💪 (Toggle)
-----------------------------------------------------------------
+--// Training Tab
+local TrainingTab = Window:CreateTab("Training", 4483362458)
+
 local autoLift = false
-MainTab:CreateToggle({
-    Name = "Auto Lift 💪",
+TrainingTab:CreateToggle({
+    Name = "Auto Lift (x3 Speed)",
     CurrentValue = false,
-    Flag = "AutoLift",
-    Callback = function(state)
-        autoLift = state
-        if autoLift then
-            task.spawn(function()
-                while autoLift do
-                    for i = 1, 3 do
-                        pcall(function()
-                            game:GetService("ReplicatedStorage")
-                                .Packages["_Index"]["sleitnick_knit@1.5.1"]
-                                .knit.Services.TrainService.RE.Train:FireServer()
-                        end)
-                    end
-                    task.wait(0.1)
+    Callback = function(Value)
+        autoLift = Value
+        task.spawn(function()
+            while autoLift do
+                for i = 1, 3 do
+                    local args = {[1] = "Lift"}
+                    game:GetService("ReplicatedStorage").Remotes.Training:FireServer(unpack(args))
                 end
-            end)
-        end
+                task.wait(0.2)
+            end
+        end)
     end,
 })
 
-----------------------------------------------------------------
--- Auto Rebirth 🔄 (Toggle)
-----------------------------------------------------------------
-local autoRebirth = false
-MainTab:CreateToggle({
-    Name = "Auto Rebirth 🔄",
-    CurrentValue = false,
-    Flag = "AutoRebirth",
-    Callback = function(state)
-        autoRebirth = state
-        if autoRebirth then
-            task.spawn(function()
-                while autoRebirth do
-                    pcall(function()
-                        game:GetService("ReplicatedStorage")
-                            .Packages["_Index"]["sleitnick_knit@1.5.1"]
-                            .knit.Services.RebirthService.RF.Rebirth:InvokeServer()
-                    end)
-                    task.wait(0.1)
-                end
-            end)
-        end
-    end,
-})
+--// Movement Tab
+local MovementTab = Window:CreateTab("Movement", 4483362458)
 
-----------------------------------------------------------------
--- TP Walk (Speed 40) (Button)
-----------------------------------------------------------------
-MainTab:CreateButton({
+local tpwalking = false
+local tpConnection
+
+MovementTab:CreateToggle({
     Name = "TP Walk (Speed 40)",
-    Callback = function()
-        local Players = game:GetService("Players")
-        local RunService = game:GetService("RunService")
-        local player = Players.LocalPlayer
-        local tpwalking = true
-
-        local function startTPWalk(char)
-            local humanoid = char:WaitForChild("Humanoid")
-            RunService.Heartbeat:Connect(function(dt)
-                if tpwalking and humanoid and char.Parent then
-                    if humanoid.MoveDirection.Magnitude > 0 then
-                        char:TranslateBy(humanoid.MoveDirection * dt * 40)
+    CurrentValue = false,
+    Callback = function(Value)
+        tpwalking = Value
+        if tpwalking then
+            local player = game:GetService("Players").LocalPlayer
+            local function startTPWalk(character)
+                local humanoid = character:WaitForChild("Humanoid")
+                tpConnection = game:GetService("RunService").Heartbeat:Connect(function(delta)
+                    if tpwalking and humanoid and character.Parent then
+                        if humanoid.MoveDirection.Magnitude > 0 then
+                            character:TranslateBy(humanoid.MoveDirection * delta * 40)
+                        end
                     end
-                end
-            end)
-        end
+                end)
+            end
 
-        player.CharacterAdded:Connect(startTPWalk)
-        if player.Character then
-            startTPWalk(player.Character)
+            player.CharacterAdded:Connect(startTPWalk)
+            if player.Character then
+                startTPWalk(player.Character)
+            end
+        else
+            if tpConnection then
+                tpConnection:Disconnect()
+                tpConnection = nil
+            end
         end
+    end,
+})
+
+--// Eggs Tab
+local EggsTab = Window:CreateTab("Eggs", 4483362458)
+
+local autoHatch = false
+local selectedEgg = "Egg_1_1"
+
+EggsTab:CreateDropdown({
+    Name = "Select Egg",
+    Options = {"Egg_1_1", "Egg_1_2", "Egg_1_3", "Egg_1_5"},
+    CurrentOption = "Egg_1_1",
+    Callback = function(Value)
+        selectedEgg = Value
+    end,
+})
+
+EggsTab:CreateToggle({
+    Name = "Auto Hatch",
+    CurrentValue = false,
+    Callback = function(Value)
+        autoHatch = Value
+        task.spawn(function()
+            while autoHatch do
+                local args = {selectedEgg, 1}
+                local HatchService = game:GetService("ReplicatedStorage")
+                    :WaitForChild("Packages")
+                    :WaitForChild("_Index")
+                    :WaitForChild("sleitnick_knit@1.5.1")
+                    :WaitForChild("knit")
+                    :WaitForChild("Services")
+                    :WaitForChild("EggHatchService")
+                    :WaitForChild("RE")
+                    :WaitForChild("Hatch")
+                HatchService:FireServer(unpack(args))
+                task.wait(1)
+            end
+        end)
     end,
 })
